@@ -40,6 +40,8 @@ module ShopifyAPI
 
     def load_attributes_from_response(response)
       ready_response = poll_from_previous_response(response)
+      poll(response) do
+      end
       super(ready_response)
     end
 
@@ -47,24 +49,24 @@ module ShopifyAPI
       response.code == ACCEPTED_RESPONSE_CODE
     end
 
-    def poll_from_previous_response(response)
-      return response unless polling_enabled?
-      return response if ready?(response)
+    # def poll_from_previous_response(response)
+    #   return response unless polling_enabled?
+    #   return response if ready?(response)
+    #
+    #   poll do
+    #     connection.get()
+    #   end
+    # end
 
-      poll do
-        connection.get()
-      end
-    end
-
-    def poll
+    def poll(response)
       retry_n = 0
-      result = nil
+      result = response
 
       loop do
-        result = yield
-
         break if ready?(result)
         break if retry_n > self.class.max_retries
+
+        result = yield(response)
 
         retry_n += 1
         sleep(self.class.polling_interval)
